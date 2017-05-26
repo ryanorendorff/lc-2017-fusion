@@ -1,8 +1,5 @@
-%options ghci -fglasgow-exts
-
 %if False
 
-> {-# OPTIONS -XStandaloneDeriving -XFlexibleInstances -XFlexibleContexts #-}
 > {-# LANGUAGE BangPatterns #-}
 > {-# LANGUAGE RankNTypes #-}
 > {-# LANGUAGE GADTs #-}
@@ -69,7 +66,7 @@
 
 \title{Fusion: Applying Equational Transforms to Simplify Programs}
 \subtitle{\verb|github.com/ryanorendorff/lc-2017-fusion|}
-\author{Ryan~Orendorff, PhD\inst{1}}
+\author{Ryan~Orendorff\inst{1}}
 
 \institute{
   \inst{1}%
@@ -77,6 +74,7 @@
   University of California, Berkeley\\
   University of California, San Francisco
 }
+
 \date{May 2017}
 
 \begin{document}
@@ -100,71 +98,9 @@
 
 %format million = "1,000,000"
 
-%if False
-
-> -- We define this function for testing against what GHC natively does.
-> process' :: [Int] -> Int
-> process' xs = foldr (+) 0 . map sq $ xs
-
-%endif
-
 %format mapunfused = "\Varid{map}"
-\definefunc{mapunfused}{
-
-> mapunfused :: (a -> b) -> [a] -> [b]
-
-}{
-
-> mapunfused  _  []      = []
-> mapunfused  f  (x:xs)  = f x : mapunfused f xs
-
-}
-
-\definefunc{sq}{
-
-> sq :: Int -> Int
-
-}{
-
-%if False
-
-> {-# INLINE sq #-}
-
-%endif
-
-> sq x = x*x
-
-}
-
-% Note that this definition is itself far more efficient than then following
-% more standard definition of foldr
-%
-% foldrunfused _ b []     = b
-% foldrunfused f b (a:as) = foldrunfused f (f a b) as
-
 %format foldrunfused = "\Varid{foldr}"
-\definefunc{foldrunfused}{
-
-> foldrunfused :: (a -> b -> b) -> b -> [a] -> b
-
-}{
-
-> foldrunfused  _  z  []      =  z
-> foldrunfused  f  z  (x:xs)  =  f x (foldrunfused f z xs)
-
-}
-
-
 %format sumunfused = "\Varid{sum}"
-\definefunc{sumunfused}{
-
-> sumunfused :: [Int] -> Int
-
-}{
-
-> sumunfused = foldrunfused (+) 0
-
-}
 
 \definefunc{process}{
 
@@ -175,6 +111,15 @@
 > process xs = sumunfused . mapunfused sq $ xs
 
 }
+
+%if False
+
+> -- We define this function for testing against what GHC natively does.
+> process' :: [Int] -> Int
+> process' xs = foldr (+) 0 . map sq $ xs
+
+%endif
+
 
 
 %format processmanualfused = "\Varid{process_{hand}} "
@@ -199,18 +144,34 @@ the result.
 
 Where we have defined the functions as follows.
 
-\mapunfuseddef
-\sqdef
+
+> mapunfused  _  []      = []
+> mapunfused  f  (x:xs)  = f x : mapunfused f xs
+>
+> sq x = x*x
+
+%if False
+
+> {-# INLINE sq #-}
+
+%endif
 
 \pause
-\vspace{-1em}
 
-\foldrunfused
-\sumunfused
+% Note that this definition is itself far more efficient than then following
+% more standard definition of foldr
+%
+% foldrunfused _ b []     = b
+% foldrunfused f b (a:as) = foldrunfused f (f a b) as
 
+
+> foldrunfused :: (a -> b -> b) -> b -> [a] -> b
+> foldrunfused  _  z  []      =  z
+> foldrunfused  f  z  (x:xs)  =  f x (foldrunfused f z xs)
+>
+> sumunfused = foldrunfused (+) 0
 
 \end{frame}
-
 
 \begin{frame}
 \frametitle{How fast is |process|?}
@@ -233,7 +194,7 @@ which uses the standard Prelude |sum| and |map|.
 \toprule
   Function & Time (ms) & Memory (MB) \\
   \midrule
-  |process|       & 220.0 & 265.26 \\
+  |process|       & 41.86 & 265.26 \\
   |process'|      & 25.31   & 96.65\\
   \bottomrule
 \end{tabular}
@@ -241,7 +202,7 @@ which uses the standard Prelude |sum| and |map|.
 
 \pause
 
-\emph{How does the Prelude do so much better with the same functions?}
+\emph{How does the Prelude do better with the same functions?}
 
 \end{frame}
 
@@ -260,16 +221,14 @@ function.
 
 \pause
 
-\vspace{-1.5em}
-
 \begin{center}
 \begin{tabular}{rc}
 \toprule
-  function & time (ms) \\
+  Function              & Time (ms) & Memory (MB) \\
   \midrule
-  |process|       & 220.0 \\
-  |process'|      & 25.31   \\
-  |processmanualfused|  & 26.8  \\
+  |process|             & 41.86     & 265.26      \\
+  |process'|            & 25.31     & 96.65       \\
+  |processmanualfused|  & 26.80     & 96.65       \\
   \bottomrule
 \end{tabular}
 \end{center}
@@ -324,13 +283,11 @@ This mirrors the version of the program one would write imperatively.
 \begin{center}
 \begin{tabular}{rcc}
 \toprule
-  Function & Time (ms) & Memory (MB) \\
+  Function              & Time (ms) & Memory (MB) \\
   \midrule
-  |process|       & 220.0 & 265.26 \\
-  |process'|      & 25.31   & 96.65\\
- %|processmanualfused|  & 26.8  & 96.65\\
-  |processmanualfused'| & 4.7   & 96.65 \\
-  %process.c       & 2.6   & $8\times10^{-5}$ \\
+  |process|             & 41.86     & 265.26 \\
+  |process'|            & 25.31     & 96.65\\
+  |processmanualfused'| & 4.7       & 96.65 \\
   \bottomrule
 \end{tabular}
 \end{center}
@@ -391,9 +348,9 @@ transformations on the program.
 
 \begin{itemize}[<+->]
   \item Inlining functions
-  \item Removing redundant lambdas
+  \item Playing with lambda expressions
   \item Simplifying constant expressions (|(x + 8) - 1|)
-  \item Combining type casts
+  \item Reordering case and let expressions
   \item \emph{Applying rewrite rules}
   \item \textellipsis
 \end{itemize}
@@ -406,12 +363,18 @@ transformations on the program.
 Rewrite rules allow us to replace terms in the program with equivalent terms.
 
 \begin{verbatim}
-{-# RULES "name" forall x. id x = x #-}
+{-# RULES "name" [#] forall x. id x = x #-}
 \end{verbatim}
 
 \pause
 
-"Any time we see the term |id x|, replace it with |x|".
+\begin{itemize}[<+->]
+  \item "name" is just for us to read when debugging
+  \item \verb|[#]| represents what phase the rule is applied (phases 4-0)
+  \item The \verb|forall| brings a variable into scope
+  \item After the period is the what we are saying are equivalent statements.
+\end{itemize}
+
 
 \end{frame}
 
@@ -529,106 +492,25 @@ an accumulator instead.
 
 \end{frame}
 
-%format foldrfuse = "\Varid{foldr}"
-\definefunc{foldrfuse}{
-
-%if False
-
-> {-# INLINE [0] foldrfuse #-}
-
-%endif
-
-> foldrfuse :: (a -> b -> b) -> b -> [a] -> b
-
-}{
-
-> foldrfuse f z [] = z
-> foldrfuse f z (x:xs) = f x (foldr f z xs)
-
-}
-
-%format buildfuse = "\Varid{build}"
-\definefunc{buildfuse}{
-
-> buildfuse   :: forall a. (forall b. (a -> b -> b) -> b -> b) -> [a]
-
-}{
-
-%if False
-
-> {-# INLINE [1] buildfuse #-}
-
-%endif
-
-> buildfuse g = g (:) []
-
-}
 
 %format mapfuse = "\Varid{map}"
-\definefunc{mapfuse}{
-
-> mapfuse :: (a -> b) -> [a] -> [b]
-
-}{
+%format sumfuse = "\Varid{sum}"
+%format processfuse = "\Varid{process}"
 
 %if False
 
-> {-# NOINLINE [0] mapfuse #-}
-
-%endif
-
+> mapfuse :: (a -> b) -> [a] -> [b]
 > mapfuse _ []     = []
 > mapfuse f (x:xs) = f x : mapfuse f xs
 
-}
-
-%format mapFBfuse = "\Varid{mapFB}"
-\definefunc{mapfbfuse}{
-
-> mapFBfuse ::  (elt -> lst -> lst) -> (a -> elt) -> a -> lst -> lst
-
-}{
-
-%if False
-
-> {-# INLINE [0] mapFBfuse #-}
-
-%endif
-
-> mapFBfuse c f = \x ys -> c (f x) ys
-
-}
-
-%format sumfuse = "\Varid{sum}"
-\definefunc{sumfuse}{
-
 > sumfuse :: [Int] -> Int
-
-}{
-
-%if False
-
-> {-# INLINE sumfuse #-}
-
-%endif
-
 > sumfuse =  foldrfuse (+) 0
 
-}
-
-%format processfuse = "\Varid{process}"
-\definefunc{processfuse}{
-
 > processFuse :: [Int] -> Int
-
-}{
-
 > processFuse = sumfuse . mapfuse sq
 
-}
-
-
-%if False
+> {-# NOINLINE [0] mapfuse #-}
+> {-# INLINE sumfuse #-}
 
 > {-# RULES
 > "foldfuse/buildfuse"    forall k z (g::forall b. (a->b->b) -> b -> b) .
@@ -646,7 +528,6 @@ an accumulator instead.
 %endif
 
 
-
 \section{List fusion with |foldr|/|build|}
 
 \begin{frame}
@@ -658,13 +539,32 @@ GHC accomplishes fusion with two functions: foldr and build.
 
 |foldr| combines the elements of a list
 
-\foldrfuse
+%format foldrfuse = "\Varid{foldr}"
+
+> foldrfuse :: (a -> b -> b) -> b -> [a] -> b
+> foldrfuse f z [] = z
+> foldrfuse f z (x:xs) = f x (foldrfuse f z xs)
+
+%if False
+
+> {-# INLINE [0] foldrfuse #-}
+
+%endif
 
 \pause
 
 while |build| builds up a list from a generating function.
 
-\buildfuse
+%format buildfuse = "\Varid{build}"
+
+> buildfuse   :: forall a. (forall b. (a -> b -> b) -> b -> b) -> [a]
+> buildfuse g = g (:) []
+
+%if False
+
+> {-# INLINE [1] buildfuse #-}
+
+%endif
 
 \pause
 
@@ -675,7 +575,7 @@ while |build| builds up a list from a generating function.
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{The |foldr3|/|build1| rule removes intermediate fold/build pairs}
+\frametitle{The |foldr|/|build| rule removes intermediate fold/build pairs}
 
 To remove intermediate data structures (those created by |build|), we eliminate |foldr|/|build| pairs with a rule.
 
@@ -701,7 +601,16 @@ foldr f z (build g) = g f z #-}
 To convert our definition of maps into a fold/build pair, we need the
 following helper function.
 
-\mapfbfuse
+%format mapFBfuse = "\Varid{mapFB}"
+
+> mapFBfuse ::  (elt -> lst -> lst) -> (a -> elt) -> a -> lst -> lst
+> mapFBfuse c f = \x ys -> c (f x) ys
+
+%if False
+
+> {-# INLINE [0] mapFBfuse #-}
+
+%endif
 
 \pause
 
@@ -765,7 +674,7 @@ Let's try applying the rewrite rules manually.
 \pause
 
 \begin{spec}
-  foldr (+) 0 (build (\c n -> foldrfuse (mapFBfuse c sq) n xs))
+  foldrfuse (+) 0 (build (\c n -> foldrfuse (mapFBfuse c sq) n xs))
 \end{spec}
 \vspace{-3em}
 
@@ -851,14 +760,14 @@ Now let's do the |(x:xs)| case.
 \pause
 
 \begin{spec}
-== {- use definition of |processfused|: |foldr f 0 xs = processfused xs|-}
+== {- use definition of |processFuse|: |foldr f 0 xs = processFuse xs|-}
 \end{spec}
 \vspace{-2em}
 
 \pause
 
 \begin{spec}
-(\x ys -> sq x + ys) x (processfused xs)
+(\x ys -> sq x + ys) x (processFuse xs)
 \end{spec}
 \vspace{-2em}
 
@@ -884,7 +793,7 @@ sq x + process xs
 \vspace{-2em}
 
 \begin{spec}
-x*x + processfused xs
+x*x + processFuse xs
 \end{spec}
 
 \end{frame}
@@ -915,11 +824,11 @@ output of the compiler and it confirms what we expected.
 \toprule
   Function & Time (ms) & Memory (MB) \\
   \midrule
-  |process|       & 220.0 & 265.26 \\
+  |process|       & 41.86 & 265.26 \\
   |process'|      & 25.31   & 96.65\\
- %|processmanualfused|  & 26.8  & 96.65\\
+ %|processmanualfused|  & 26.80  & 96.65\\
   |processmanualfused| & 25.31   & 96.65 \\
-  |processfused| & 25.31   & 96.65 \\
+  |processFuse| & 25.31   & 96.65 \\
   %process.c       & 2.6   & $8\times10^{-5}$ \\
   \bottomrule
 \end{tabular}
@@ -947,38 +856,22 @@ list as a state machine.
 
 \end{frame}
 
-\definefunc{stream}{
 
 %if False
 
 > {-# INLINE [1] stream #-}
 
-%endif
-
 > stream :: [a] -> Stream a
-
-}{
-
 > stream xs = Stream uncons xs
 >   where
 >     uncons []      =  Done
 >     uncons (x:xs)  =  Yield x xs
 
-}
-
-
-\definefunc{unstream}{
-
-%if False
 
 > {-# INLINE [1] unstream #-}
 
-%endif
 
 > unstream :: Stream a -> [a]
-
-}{
-
 > unstream (Stream next s0) = unfold next s0
 >   where
 >     unfold next s = case next s of
@@ -986,58 +879,9 @@ list as a state machine.
 >                       Skip s' -> unfold next s'
 >                       Yield x s' -> x : unfold next s'
 
-}
-
-\definefunc{maps}{
-
-%if False
-
-> {-# INLINE maps #-}
-
-%endif
-
-> maps :: (a -> b) -> Stream a -> Stream b
-
-}{
-
-> maps f (Stream next0 s0) = Stream next s0
->   where
->     next s = case next0 s of
->               Done -> Done
->               Skip s' -> Skip s'
->               Yield x s' -> Yield (f x) s'
-
-}
-
-\definefunc{mapl}{
-
-%if False
-
-> {-# INLINE mapl #-}
-
-%endif
-
-> mapl :: (a -> b) -> [a] -> [b]
-
-}{
-
-> mapl f = unstream . maps f . stream
-
-}
-
-
-\definefunc{foldls}{
-
-%if False
-
-{-# INLINE foldls #-}
-
-%endif
+> {-# INLINE foldls #-}
 
 > foldls :: (b -> a -> b) -> b -> Stream a -> b
-
-}{
-
 > foldls f a (Stream next s0) = go a s0
 >   where
 >     go a s = case next s of
@@ -1045,68 +889,59 @@ list as a state machine.
 >               Skip s' -> go a s'
 >               Yield x s' -> go (f a x) s'
 
-}
-
-\definefunc{foldll}{
-
-%if False
-
 > {-# INLINE foldll #-}
 
-%endif
-
 > foldll :: (b -> a -> b) -> b -> [a] -> b
-
-}{
-
 > foldll f a = foldls f a . stream
-
-}
-
-
-\definefunc{mapteststream}{
-
-> mapTestStream :: [Int] -> [Int]
-
-}{
-
-> mapTestStream xs = mapl (+1) (mapl (*2) xs)
-
-}
-
-\definefunc{mapteststreamcompiled}{
-
-> mapTestStreamCompiled :: [Int] -> [Int]
-
-}{
-
-> mapTestStreamCompiled [] = []
-> mapTestStreamCompiled (x:xs)  =
->   1 + (x*2) : mapTestStreamCompiled xs
-
-}
-
-%if False
 
 > {-# RULES "stream/unstream" forall (s :: Stream a). stream (unstream s) = s #-}
 
 %endif
 
+
 \begin{frame}
 \frametitle{Streams have little helpers to make lists}
 
-\stream
+To work on standard lists, we introduce the following two functions to
+convert between lists and streams.
 
-\unstream
+< steam     ::  [a] -> Stream a
+< unstream  ::  Stream a -> [a]
+
+Note that these functions are inverses.
+
+%format id_stream
+%format list = "[a]"
+%format id_list
+
+< stream . unstream == id_stream
+< unstream . stream == id_list
 
 \end{frame}
 
 \begin{frame}
 \frametitle{Maps on Streams!}
 
-\maps
+%if False
 
-\mapl
+> {-# INLINE maps #-}
+> {-# INLINE mapl #-}
+
+%endif
+
+
+> maps :: (a -> b) -> Stream a -> Stream b
+> maps f (Stream next0 s0) = Stream next s0
+>   where
+>     next s = case next0 s of
+>               Done -> Done
+>               Skip s' -> Skip s'
+>               Yield x s' -> Yield (f x) s'
+
+\pause
+
+> mapl :: (a -> b) -> [a] -> [b]
+> mapl f = unstream . maps f . stream
 
 \end{frame}
 
@@ -1122,9 +957,15 @@ Fusion on streams only has one rewrite rule, and it is pretty simple.
 
 \pause
 
-\mapteststream
+> mapTestStream :: [Int] -> [Int]
+> mapTestStream xs = mapl (+1) (mapl (*2) xs)
 
-\mapteststreamcompiled
+\pause
+
+> mapTestStreamCompiled :: [Int] -> [Int]
+> mapTestStreamCompiled [] = []
+> mapTestStreamCompiled (x:xs)  =
+>   1 + (x*2) : mapTestStreamCompiled xs
 
 \end{frame}
 
@@ -1159,15 +1000,14 @@ But has incredible performance!
 \toprule
   Function & Time (ms) & Memory (MB) \\
   \midrule
-  |process|       & 220.0 & 265.26 \\
-  |process'|      & 25.31   & 96.65\\
- %|processmanualfused|  & 26.8  & 96.65\\
-  |processmanualfused'| & 4.7   & 96.65 \\
- % process.c       & 2.6   & $8\times10^{-5}$ \\
-  processVec      & 0.7   & $16\times10^{-5}$ \\
+  |process|      & 41.86 & 265.26 \\
+  |processFuse| & 25.31 & 96.65\\
+  |processVec|   & 0.7   & $16\times10^{-5}$ \\
   \bottomrule
 \end{tabular}
 \end{center}
+
+
 
 \end{frame}
 
@@ -1178,37 +1018,29 @@ While we wrote this in our program
 
 < processVec n = V.sum $ V.map sq $ V.enumFromTo 1 (n :: Int)
 
-GHC ended up generating the following Core code.
+GHC then generates the following code (simplified back to Haskell).
 
-< loop counter acc = case counter <= 100000000
-<       False -> acc;
-<       True -> loop (counter + 1) (acc + counter * counter)
+\pause
 
-\rnote{simplify this core, ignore unboxing}
+> processVecGHC n = loop 1 0
+>   where
+>     loop count acc = case count <= n of
+>                        False -> acc
+>                        True -> loop (count + 1) (acc + (count * count))
 
 \end{frame}
 
 \begin{frame}
 \frametitle{Repa: A numerical Haskell Library using Fusion}
 
-Repa also uses fusion in order to handle array operations.
+Repa also uses fusion in order to handle parallel array operations.
+
+< import qualified Data.Array.Repa as R
+
+> processRepa n = R.foldP (+) 0 . R.map sq $ array
+>   where
+>     array = R.fromListUnboxed (R.Z R.:. (n :: Int)) [1..n]
 
 \end{frame}
-
-\begin{frame}
-\frametitle{Data Parallel Haskell: Nested Data Parallelism made easy}
-
-< processDPH :: [: Int :] -> Int
-< processDPH = sumDPH . mapDPH sq $ xs
-
-Does dispatch by MPI.
-
-\end{frame}
-
-
-% mapTestUnfused       255,999,920  488  OK
-% time                 26.38 ms   (25.07 ms .. 27.95 ms)
-% mapTestFused       183,999,920  355  OK
-% time                 17.62 ms   (17.23 ms .. 18.08 ms)
 
 \end{document}
