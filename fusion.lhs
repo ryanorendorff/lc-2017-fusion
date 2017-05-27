@@ -1170,6 +1170,15 @@ What did we talk about today?
 
 \end{frame}
 
+\begin{frame}
+\frametitle{Thanks!}
+
+\begin{center}
+\includegraphics[width=0.75\textwidth]{figs/panda.jpg}
+\end{center}
+
+\end{frame}
+
 \begin{frame}[allowframebreaks]
         \frametitle{References}
         \bibliographystyle{IEEEtranN}
