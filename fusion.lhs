@@ -182,7 +182,7 @@ So now that we have our process function, how fast does it run?
 \process
 
 Let's try to process a million elements with our |process| and |process'|,
-which uses the standard Prelude |sum| and |map|.
+which uses the standard Prelude |foldr| and |map|.
 
 < process   [0..million]; process'  [0..million]
 
@@ -322,6 +322,8 @@ byte code. \cite{Team:Gi8C1ZU-}
 \end{frame}
 
 
+%format `trans` = "\Rightarrow "
+
 \begin{frame}
 \frametitle{GHC performs several program transformations on Core to optimize the code}
 
@@ -330,8 +332,8 @@ transformations on the program. \cite{Team:aqSC0Vao}
 
 \begin{itemize}[<+->]
   \item Inlining functions
-  \item Playing with lambda expressions
-  \item Simplifying constant expressions (|(x + 8) - 1|)
+  \item Applying a function to its arguments (|(\x -> x + y) 4 `trans` 4 + y|)
+  \item Simplifying constant expressions (|x + 8 - 1 `trans` x + 7|)
   \item Reordering case and let expressions
   \item \emph{Applying rewrite rules}
   \item \textellipsis
@@ -352,9 +354,9 @@ Rewrite rules allow us to replace terms in the program with equivalent terms. \c
 
 \begin{itemize}[<+->]
   \item "name" is just for us to read when debugging
-  \item \verb|[#]| represents what phase the rule is applied (phases 4-0)
-  \item The \verb|forall| brings a variable into scope
-  \item After the period is the what we are saying are equivalent statements.
+  \item \verb|[#]| represents what phase the rule is applied (phases 4-0). This annotation is optional.
+  \item The \verb|forall| brings a variable into scope. Sometimes written $\forall$.
+  \item After the period are the equivalent statements.
 \end{itemize}
 
 
@@ -378,7 +380,7 @@ Rewrite rules have some gotchas. \cite{Team:v0F8esqC}
 \begin{verbatim}
 {-# RULES "id" forall x. id x = x #-}
 \end{verbatim}
-$ x \nRightarrow id x$
+$ x \nRightarrow id\ x$
 
 \item You can make the compiler go into an infinite loop.
 
@@ -474,8 +476,7 @@ and find we get a bit better time and space performance.
 \begin{frame}
 \frametitle{Through rules, GHC performs fusion}
 
-Some of the rules work together to perform \emph{fusion}: to combine terms
-in such a way as to pass over a data structure once.
+Rules allow us to perform \emph{fusion}, where we remove intermediate data structures from the computation.
 
 In our |process| function, we create an intermediate list
 
@@ -553,7 +554,7 @@ while |build| builds up a list from a generating function.
 
 %format buildfuse = "\Varid{build}"
 
-> buildfuse   :: forall a. (forall b. (a -> b -> b) -> b -> b) -> [a]
+> buildfuse   :: (forall b. (a -> b -> b) -> b -> b) -> [a]
 > buildfuse g = g (:) []
 
 %if False
@@ -623,7 +624,7 @@ With that, we have all we need to convert map into build/fold.
 
 \begin{lstlisting}
 {-# RULES "map" [~1] !$\forall$! f xs. map f xs =
-  build (\c n -> foldr mapFB c f) n xs) #-}
+  build (\c n -> foldr (mapFB c f) n xs) #-}
 \end{lstlisting}
 
 \pause
@@ -847,10 +848,10 @@ As expected, we get the same performance after performing the fusion rules.
   Function             & Time (ms) & Memory (MB)      \\
   \midrule
   |process|            & 41.86     & 265.26           \\
-  |process'|           & 25.31     & 96.65            \\
+  |process'|           & 26.60     & 96.65            \\
  %|processmanualfused| & 26.80     & 96.65            \\
-  |processmanualfused| & 25.31     & 96.65            \\
-  |processFuse|        & 25.31     & 96.65            \\
+  |processmanualfused| & 28.80     & 96.65            \\
+  |processFuse|        & 27.08     & 96.65            \\
   %process.c           & 2.6       & $8\times10^{-5}$ \\
   \bottomrule
 \end{tabular}
@@ -937,7 +938,7 @@ convert between lists and streams.
 > stream xs = Stream uncons xs
 >   where
 >     uncons  []      =  Done
->     uncons  (x:xs)  =  Yield x xs
+>     uncons  (y:ys)  =  Yield y ys
 
 \end{frame}
 
@@ -1144,7 +1145,7 @@ And the final code generated is the following.
 \begin{frame}
 \frametitle{Other use cases for fusion}
 
-Besides vector, stream fusion is used in a few other places.
+Besides vector, fusion is used in a few other places.
 
 \begin{itemize}[<+->]
   \item Repa, a parallel list processing library \cite{Lippmeier:2014fx}
