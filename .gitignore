@@ -10,6 +10,7 @@ _minted-*/
 *.blg
 *.log
 *.nav
+*.out
 *.ptb
 *.snm
 *.toc
