@@ -1,0 +1,29 @@
+/.stack-work/
+TAGS
+.DS_Store
+.travis.yml
+
+## TeX related
+_minted-*/
+*.aux
+*.bbl
+*.blg
+*.log
+*.nav
+*.ptb
+*.snm
+*.toc
+*.vrb
+
+fusion.tex
+
+## Haskell
+*.hi
+*.o
+
+## Compiled benching programs
+bench
+weighTest
+
+## Testing code
+code/
