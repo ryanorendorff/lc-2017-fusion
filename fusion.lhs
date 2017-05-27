@@ -20,8 +20,7 @@
 
 \usepackage{appendixnumberbeamer}
 \usepackage{booktabs}
-\usepackage{minted}
-\usepackage{natbib}
+\usepackage[numbers,sort&compress]{natbib}
 
 \usepackage{listings}
 \lstset{basicstyle=\ttfamily, escapeinside={!!}, mathescape=true}
@@ -86,6 +85,7 @@
 \tableofcontents[]
 \end{frame}
 
+\AtBeginSection[] {}
 \section{Motivation: Simple Programs versus Performance}
 
 \AtBeginSection[]
@@ -138,12 +138,13 @@
 \frametitle{Common way to process a list: map and fold!}
 
 As an example, say we want to square all the elements in a list and then sum
-the result.
+the result. \cite{Wadler:1990ix,Coutts:2007up,Coutts:2010um,Karpov:2016wn}
 
 \process
 
 Where we have defined the functions as follows.
 
+\pause
 
 > mapunfused  _  []      = []
 > mapunfused  f  (x:xs)  = f x : mapunfused f xs
@@ -192,10 +193,10 @@ which uses the standard Prelude |sum| and |map|.
 \begin{center}
 \begin{tabular}{rcc}
 \toprule
-  Function & Time (ms) & Memory (MB) \\
+  Function   & Time (ms) & Memory (MB) \\
   \midrule
-  |process|       & 41.86 & 265.26 \\
-  |process'|      & 25.31   & 96.65\\
+  |process|  & 41.86     & 265.26      \\
+  |process'| & 25.31     & 96.65       \\
   \bottomrule
 \end{tabular}
 \end{center}
@@ -222,7 +223,7 @@ function.
 \pause
 
 \begin{center}
-\begin{tabular}{rc}
+\begin{tabular}{rcc}
 \toprule
   Function              & Time (ms) & Memory (MB) \\
   \midrule
@@ -296,25 +297,6 @@ This mirrors the version of the program one would write imperatively.
 
 %endif
 
-\begin{frame}
-\frametitle{GHC generated the simplified version automatically}
-
-Our manual version |processmanualfused|.
-
-\processmanualfused
-
-and when we compile the Prelude defined |process'|, GHC produces
-
-> processGHC :: [Int] -> Int
-> processGHC  []      = 0
-> processGHC  (x:xs)  = x*x + (processGHC xs)
-
-\pause
-\emph{How can we leverage the compiler to write simple code that is fast?}
-
-\end{frame}
-
-
 \section{A brief introduction to GHC}
 
 \begin{frame}
@@ -322,7 +304,7 @@ and when we compile the Prelude defined |process'|, GHC produces
 
 When GHC compiles a Haskell program, it converts the code into an
 intermediate language called "Core", which is then (eventually) turned into
-byte code.
+byte code. \cite{Team:Gi8C1ZU-}
 
 \includegraphics[width=\textwidth]{figs/ghcpipe.pdf}
 
@@ -333,7 +315,7 @@ byte code.
 
 When GHC compiles a Haskell program, it converts the code into an
 intermediate language called "Core", which is then (eventually) turned into
-byte code.
+byte code. \cite{Team:Gi8C1ZU-}
 
 \includegraphics[width=\textwidth]{figs/ghcpipe_core.pdf}
 
@@ -344,7 +326,7 @@ byte code.
 \frametitle{GHC performs several program transformations on Core to optimize the code}
 
 When GHC is given a Core program, it performs several types of
-transformations on the program.
+transformations on the program. \cite{Team:aqSC0Vao}
 
 \begin{itemize}[<+->]
   \item Inlining functions
@@ -360,7 +342,7 @@ transformations on the program.
 \begin{frame}
 \frametitle{Rewrite Rules allow us to say two expressions are equivalent}
 
-Rewrite rules allow us to replace terms in the program with equivalent terms.
+Rewrite rules allow us to replace terms in the program with equivalent terms. \cite{playbyrules}
 
 \begin{verbatim}
 {-# RULES "name" [#] forall x. id x = x #-}
@@ -381,7 +363,7 @@ Rewrite rules allow us to replace terms in the program with equivalent terms.
 \begin{frame}
 \frametitle{Rules have some restrictions}
 
-Rewrite rules have some gotchas.
+Rewrite rules have some gotchas. \cite{Team:v0F8esqC}
 
 \begin{itemize}[<+->]
 
@@ -404,7 +386,7 @@ $ x \nRightarrow id x$
 {-# RULES "fxy" forall x y. f x y = f y x #-}
 \end{verbatim}
 
-\item If multiple rules are possible, GHC will randomly choose one.
+\item If multiple rules are possible, GHC arbitrarily chooses one.
 
 \end{itemize}
 
@@ -422,6 +404,7 @@ $ x \nRightarrow id x$
 }
 
 %format mapTestFused = "\Varid{mapTest_{fuse}}"
+%format mapfuse = "\Varid{map_{fuse}}"
 \definefunc{maptestfused}{
 
 > mapTestFused :: [Int] -> [Int]
@@ -435,7 +418,7 @@ $ x \nRightarrow id x$
 \begin{frame}[fragile]
 \frametitle{We can combine maps to traverse a list once}
 
-Let us introduce the following rule about maps.
+Let us introduce the following rule about maps. \cite{Karpov:2016wn}
 
 
 \begin{lstlisting}
@@ -446,8 +429,18 @@ Let us introduce the following rule about maps.
 
 \pause
 
-\maptestunfused
-\maptestfused
+\maptestunfusedtype
+
+\vspace{-2em}
+
+\maptestunfuseddef
+
+
+\maptestfusedtype
+
+\vspace{-2em}
+
+\maptestfuseddef
 
 \end{frame}
 
@@ -458,6 +451,9 @@ Let us introduce the following rule about maps.
 We can test our functions on a million elements
 
 \maptestunfuseddef
+
+\vspace{-2em}
+
 \maptestfuseddef
 
 and find we get a bit better time and space performance.
@@ -493,9 +489,9 @@ an accumulator instead.
 \end{frame}
 
 
-%format mapfuse = "\Varid{map}"
 %format sumfuse = "\Varid{sum}"
 %format processfuse = "\Varid{process}"
+%format processFuse = "\Varid{process_{fuse}}"
 
 %if False
 
@@ -533,7 +529,7 @@ an accumulator instead.
 \begin{frame}
 \frametitle{|foldr/build| fusion is used to simplify list computations}
 
-GHC accomplishes fusion with two functions: foldr and build.
+GHC accomplishes fusion with two functions: foldr and build. \cite{Team:8RXCROes,Coutts:2010um}
 
 \pause
 
@@ -599,7 +595,7 @@ foldr f z (build g) = g f z #-}
 \frametitle{We need a few extra rules to convert maps into fold/builds}
 
 To convert our definition of maps into a fold/build pair, we need the
-following helper function.
+following helper function. \cite{Team:8RXCROes,Team:v0F8esqC}
 
 %format mapFBfuse = "\Varid{mapFB}"
 
@@ -614,26 +610,46 @@ following helper function.
 
 \pause
 
+As an example, lets apply the list cons |c = (:)| and |f = sq|
+
+< \x ys -> sq x : ys
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{We need a few extra rules to convert maps into fold/builds}
+
 With that, we have all we need to convert map into build/fold.
 
 \begin{lstlisting}
-{-# RULES "map" !$\forall$! f xs. map f xs =
+{-# RULES "map" [~1] !$\forall$! f xs. map f xs =
   build (\c n -> foldr mapFB c f) n xs) #-}
 \end{lstlisting}
 
 \pause
 
-%if False
-
-We also provide a way to combine sequential |mapFB| functions.
-
+We also provide a way to cancel failed fusion by converting back to a map.
 
 \begin{lstlisting}
-{-# RULES "mapFB" !$\forall$! c f g. mapFB (mapFB c f) g =
-                          mapFB c (f . g) #-}
+{-# RULES "mapList" [1] !$\forall$! f.
+  foldr (mapFB (:) f) []  = map f #-}
 \end{lstlisting}
 
-%endif
+\pause
+
+\begin{spec}
+
+  build (\c n -> foldr mapFB c f) n xs)
+
+== {- inline def of build -}
+
+  (\c n -> foldr mapFB c f) n xs) (:) []
+
+== {- remove lambda -}
+
+  foldr (mapFB (:) f) [] xs
+
+\end{spec}
 
 \end{frame}
 
@@ -688,7 +704,7 @@ Let's try applying the rewrite rules manually.
 \pause
 
 \begin{spec}
-  \c n -> foldfuse (mapFBfuse c sq) n xs) (+) 0
+  \c n -> foldrfuse (mapFBfuse c sq) n xs) (+) 0
 \end{spec}
 \vspace{-3em}
 
@@ -702,7 +718,7 @@ Let's try applying the rewrite rules manually.
 \pause
 
 \begin{spec}
-  foldfuse (\x ys -> sq x + ys) 0 xs
+  foldrfuse (\x ys -> sq x + ys) 0 xs
 \end{spec}
 
 \end{frame}
@@ -714,7 +730,7 @@ Let's try applying the rewrite rules manually.
 We now look at empty case
 
 \begin{spec}
-  foldfuse (\x ys -> sq x + ys) 0 []
+  foldrfuse (\x ys -> sq x + ys) 0 []
 \end{spec}
 \vspace{-2em}
 
@@ -739,7 +755,7 @@ We now look at empty case
 Now let's do the |(x:xs)| case.
 
 \begin{spec}
-  process (x:xs) = foldfuse (\x ys -> sq x + ys) 0 (x:xs)
+  process (x:xs) = foldrfuse (\x ys -> sq x + ys) 0 (x:xs)
 \end{spec}
 \vspace{-2em}
 
@@ -760,7 +776,7 @@ Now let's do the |(x:xs)| case.
 \pause
 
 \begin{spec}
-== {- use definition of |processFuse|: |foldr f 0 xs = processFuse xs|-}
+== {- use def of |processFuse|: |foldrfuse f 0 xs = processFuse xs|-}
 \end{spec}
 \vspace{-2em}
 
@@ -803,9 +819,12 @@ x*x + processFuse xs
 
 If we now combine our two cases, we have the following
 
-\processmanualfuseddef
+< processFuse []      =  0
+< processFuse (x:xs)  =  x * x + processFuse xs
 
 This is the same as what we had originally written manually!
+
+\processmanualfuseddef
 
 \end{frame}
 
@@ -815,24 +834,43 @@ This is the same as what we had originally written manually!
 We managed to fuse |process| using our rewrite rules. We can look at the
 output of the compiler and it confirms what we expected.
 
-\processmanualfuseddef
+< processFuse []      =  0
+< processFuse (x:xs)  =  x * x + processFuse xs
 
 \pause
+
+As expected, we get the same performance after performing the fusion rules.
 
 \begin{center}
 \begin{tabular}{rcc}
 \toprule
-  Function & Time (ms) & Memory (MB) \\
+  Function             & Time (ms) & Memory (MB)      \\
   \midrule
-  |process|       & 41.86 & 265.26 \\
-  |process'|      & 25.31   & 96.65\\
- %|processmanualfused|  & 26.80  & 96.65\\
-  |processmanualfused| & 25.31   & 96.65 \\
-  |processFuse| & 25.31   & 96.65 \\
-  %process.c       & 2.6   & $8\times10^{-5}$ \\
+  |process|            & 41.86     & 265.26           \\
+  |process'|           & 25.31     & 96.65            \\
+ %|processmanualfused| & 26.80     & 96.65            \\
+  |processmanualfused| & 25.31     & 96.65            \\
+  |processFuse|        & 25.31     & 96.65            \\
+  %process.c           & 2.6       & $8\times10^{-5}$ \\
   \bottomrule
 \end{tabular}
 \end{center}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{There are many types of fusion concepts out there}
+
+While |foldr/build| works well, it can have problems fusing |zip| and
+|foldl|.
+
+There are a few other systems out there. \cite{Coutts:2007up,Coutts:2010um}
+
+\begin{itemize}[<+->]
+  \item |unbuild/unfoldr|, where |unfoldr| builds a list and |unbuild| consumes a list. It can have problems fusing |filter|.
+  \item stream fusion, which works by defining a |Stream| data type that acts like an iterator.
+\end{itemize}
 
 \end{frame}
 
@@ -842,12 +880,14 @@ output of the compiler and it confirms what we expected.
 \frametitle{Introduction to Stream}
 
 The Stream fusion system attempts to do something similar, by defining a
-list as a state machine.
+list as an iterator. \cite{Coutts:2010um,Coutts:2007up}
 
 > data Stream a where
 >   Stream :: (s -> Step a s) -> s -> Stream a
 
 \pause
+
+where |Step a s| informs us how to keep processing the stream.
 
 > data Step a s  =  Done
 >                |  Skip     s
@@ -861,23 +901,11 @@ list as a state machine.
 
 > {-# INLINE [1] stream #-}
 
-> stream :: [a] -> Stream a
-> stream xs = Stream uncons xs
->   where
->     uncons []      =  Done
->     uncons (x:xs)  =  Yield x xs
 
 
 > {-# INLINE [1] unstream #-}
 
 
-> unstream :: Stream a -> [a]
-> unstream (Stream next s0) = unfold next s0
->   where
->     unfold next s = case next s of
->                       Done -> []
->                       Skip s' -> unfold next s'
->                       Yield x s' -> x : unfold next s'
 
 > {-# INLINE foldls #-}
 
@@ -900,13 +928,37 @@ list as a state machine.
 
 
 \begin{frame}
-\frametitle{Streams have little helpers to make lists}
+\frametitle{Streams have little helpers to make lists: stream}
 
 To work on standard lists, we introduce the following two functions to
 convert between lists and streams.
 
-< steam     ::  [a] -> Stream a
-< unstream  ::  Stream a -> [a]
+> stream :: [a] -> Stream a
+> stream xs = Stream uncons xs
+>   where
+>     uncons  []      =  Done
+>     uncons  (x:xs)  =  Yield x xs
+
+\end{frame}
+
+\begin{frame}
+\frametitle{Streams have little helpers to make lists: unstream}
+
+To work on standard lists, we introduce the following two functions to
+convert between lists and streams.
+
+> unstream :: Stream a -> [a]
+> unstream (Stream next s0) = unfold next s0
+>   where
+>     unfold next s = case next s of
+>                       Done        -> []
+>                       Skip    s'  ->      unfold next s'
+>                       Yield x s'  -> x :  unfold next s'
+
+
+%if False
+
+\pause
 
 Note that these functions are inverses.
 
@@ -917,10 +969,15 @@ Note that these functions are inverses.
 < stream . unstream == id_stream
 < unstream . stream == id_list
 
+%endif
+
 \end{frame}
 
 \begin{frame}
-\frametitle{Maps on Streams!}
+\frametitle{Let's define |map| for |Streams|}
+
+We can define some standard list processing functions on |Streams|. Let's
+try |map|.
 
 %if False
 
@@ -929,16 +986,19 @@ Note that these functions are inverses.
 
 %endif
 
+%format maps = "\Varid{map_{s}}"
 
 > maps :: (a -> b) -> Stream a -> Stream b
 > maps f (Stream next0 s0) = Stream next s0
 >   where
 >     next s = case next0 s of
->               Done -> Done
->               Skip s' -> Skip s'
->               Yield x s' -> Yield (f x) s'
+>               Done        -> Done
+>               Skip    s'  -> Skip         s'
+>               Yield x s'  -> Yield (f x)  s'
 
 \pause
+
+%format mapl = "\Varid{map_{[a]}}"
 
 > mapl :: (a -> b) -> [a] -> [b]
 > mapl f = unstream . maps f . stream
@@ -946,7 +1006,7 @@ Note that these functions are inverses.
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{Stream Fusion!}
+\frametitle{Fusion on Streams}
 
 Fusion on streams only has one rewrite rule, and it is pretty simple.
 
@@ -958,9 +1018,35 @@ Fusion on streams only has one rewrite rule, and it is pretty simple.
 \pause
 
 > mapTestStream :: [Int] -> [Int]
-> mapTestStream xs = mapl (+1) (mapl (*2) xs)
+> mapTestStream xs = mapl (+1) . mapl (*2) $ xs
 
 \pause
+
+\begin{spec}
+
+  mapl (+1) . mapl (*2)
+
+== {- expand mapl -}
+
+  unstream . maps (+1) . stream . unstream . maps (*2) . stream
+
+== {- apply "stream/unstream" -}
+
+  unstream . maps (+1) . maps (*2) . stream
+
+\end{spec}
+
+\end{frame}
+
+\begin{frame}
+\frametitle{Map fused by Stream Fusion}
+
+Our map example
+
+< mapTestStream :: [Int] -> [Int]
+< mapTestStream xs = mapl (+1) . mapl (*2) $ xs
+
+gets fused into this result.
 
 > mapTestStreamCompiled :: [Int] -> [Int]
 > mapTestStreamCompiled [] = []
@@ -993,7 +1079,9 @@ The vector version looks very similar.
 \begin{frame}
 \frametitle{We can make |process| even faster with |Data.Vector|}
 
-But has incredible performance!
+< processVec n = V.sum $ V.map sq $ V.enumFromTo 1 (n :: Int)
+
+But has awesome performance!
 
 \begin{center}
 \begin{tabular}{rcc}
@@ -1014,13 +1102,36 @@ But has incredible performance!
 \begin{frame}
 \frametitle{What code does |Data.Vector| generate?}
 
-While we wrote this in our program
+The |processVec| function is pretty simple in Haskell itself.
 
 < processVec n = V.sum $ V.map sq $ V.enumFromTo 1 (n :: Int)
 
-GHC then generates the following code (simplified back to Haskell).
+When compiling, GHC fires \emph{202 rules!}
 
 \pause
+
+Specifically, this appears when using the debug flag
+\verb|-ddump-rule-firings|. \cite{vector_fusion:2025}
+
+\begin{verbatim}
+...
+Rule fired: stream/unstream [Vector]
+Rule fired: stream/unstream [Vector]
+...
+\end{verbatim}
+
+\pause
+
+\end{frame}
+
+\begin{frame}
+\frametitle{What code does |Data.Vector| generate?}
+
+The |processVec| function is pretty simple in Haskell itself.
+
+< processVec n = V.sum $ V.map sq $ V.enumFromTo 1 (n :: Int)
+
+And the final code generated is the following.
 
 > processVecGHC n = loop 1 0
 >   where
@@ -1031,16 +1142,37 @@ GHC then generates the following code (simplified back to Haskell).
 \end{frame}
 
 \begin{frame}
-\frametitle{Repa: A numerical Haskell Library using Fusion}
+\frametitle{Other use cases for fusion}
 
-Repa also uses fusion in order to handle parallel array operations.
+Besides vector, stream fusion is used in a few other places.
 
-< import qualified Data.Array.Repa as R
+\begin{itemize}[<+->]
+  \item Repa, a parallel list processing library \cite{Lippmeier:2014fx}
+  \item Vector instructions by SIMD \cite{Mainland:2013js}
+  \item Pipes, a stream processing library \cite{Gonzalez:2014um}
+\end{itemize}
 
-> processRepa n = R.foldP (+) 0 . R.map sq $ array
->   where
->     array = R.fromListUnboxed (R.Z R.:. (n :: Int)) [1..n]
+\end{frame}
 
+\begin{frame}
+\frametitle{Wrap up}
+
+What did we talk about today?
+
+\begin{itemize}
+  \item Goal: simple code that performed as well as a optimized version.
+  \item A brief introduction to compilation in GHC and rewrite rules.
+  \item |foldr/build| fusion.
+  \item Showed a second type of fusion: stream fusion.
+  \item Went through some libraries using fusion.
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}[allowframebreaks]
+        \frametitle{References}
+        \bibliographystyle{IEEEtranN}
+        \bibliography{fusion}
 \end{frame}
 
 \end{document}
