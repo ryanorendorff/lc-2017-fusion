@@ -13,6 +13,8 @@ HCOMP=stack ghc -- -O3
 
 pdf: $(DOC).pdf
 
+allpdf: handout pdf
+
 fast:
 	pdflatex $(DOC).tex
 
