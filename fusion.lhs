@@ -65,10 +65,9 @@
 
 \title{Fusion: Applying Equational Transforms to Simplify Programs}
 \subtitle{\verb|github.com/ryanorendorff/lc-2017-fusion|}
-\author{Ryan~Orendorff\inst{1}}
+\author{Ryan~Orendorff}
 
 \institute{
-  \inst{1}%
   Department of Bioengineering\\
   University of California, Berkeley\\
   University of California, San Francisco
@@ -269,7 +268,7 @@ This mirrors the version of the program one would write imperatively.
 \begin{frame}
 \frametitle{How well does our manually fused version do?}
 
-< process xs = sum0 . mapunfused sq $ xs
+< process xs = sumunfused . mapunfused sq $ xs
 < process' xs = Prelude.sum . Prelude.map sq $ xs
 <
 < processmanualfused' :: [Int] -> Int
@@ -369,10 +368,10 @@ Rewrite rules have some gotchas. \cite{Team:v0F8esqC}
 
 \begin{itemize}[<+->]
 
-\item Rules doesn't prevent you from doing something silly
+\item Rules don't prevent you from doing something silly
 
 \begin{verbatim}
-{-# RULES "id5" forall x. id x = 5 #-}
+{-# RULES "id5" forall (x :: Int). id x = 5 #-}
 \end{verbatim}
 
 \item The left hand side is only substituted for the right, not the other way around.
@@ -524,6 +523,16 @@ an accumulator instead.
 
 %endif
 
+\begin{frame}
+\frametitle{FUSION!}
+
+\begin{center}
+\includegraphics[width=\textwidth]{figs/fusion.png}
+\end{center}
+
+From PhD Comics
+
+\end{frame}
 
 \section{List fusion with |foldr|/|build|}
 
@@ -705,7 +714,7 @@ Let's try applying the rewrite rules manually.
 \pause
 
 \begin{spec}
-  \c n -> foldrfuse (mapFBfuse c sq) n xs) (+) 0
+  (\c n -> foldrfuse (mapFBfuse c sq) n xs) (+) 0
 \end{spec}
 \vspace{-3em}
 
@@ -770,7 +779,7 @@ Now let's do the |(x:xs)| case.
 \pause
 
 \begin{spec}
-(\x ys -> sq x + ys) x (foldr (\x ys -> sq x + ys) z xs)
+(\x ys -> sq x + ys) x (foldr (\x ys -> sq x + ys) 0 xs)
 \end{spec}
 \vspace{-2em}
 
@@ -1065,7 +1074,7 @@ gets fused into this result.
 The |Data.Vector| package uses stream fusion and many other rewrite rules
 behind the scenes in order to optimize array based computations.
 
-< process xs = sum0 . mapunfused sq $ xs
+< process xs = sumunfused . mapunfused sq $ xs
 
 \pause
 
