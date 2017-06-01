@@ -649,11 +649,11 @@ We also provide a way to cancel failed fusion by converting back to a map.
 
 \begin{spec}
 
-  build (\c n -> foldr mapFB c f) n xs)
+  build (\c n -> foldr (mapFB c f) n xs)
 
 == {- inline def of build -}
 
-  (\c n -> foldr mapFB c f) n xs) (:) []
+  (\c n -> foldr (mapFB c f) n xs) (:) []
 
 == {- remove lambda -}
 
